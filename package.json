@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git@github.com:darky/ts-fp-di-mikroormgit"
+    "url": "git@github.com:darky/ts-fp-di-mikroorm.git"
   },
   "keywords": [
     "ts-fp-di",
