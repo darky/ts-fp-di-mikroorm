@@ -3,7 +3,7 @@ import { defineConfig } from '@mikro-orm/better-sqlite'
 import test, { afterEach, beforeEach } from 'node:test'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
 import assert from 'node:assert'
-import { dis } from 'ts-fp-di'
+import { dic, dis } from 'ts-fp-di'
 
 let orm: MikroORM
 let insertedEntitiesViaEvent: unknown[] = []
@@ -42,6 +42,8 @@ const $storeMultiple = dis(
   (state: TestEntity[], payload: Partial<TestEntity>) => state.concat(new TestEntity(payload)),
   []
 )
+
+const $const = dic<TestEntity>()
 
 beforeEach(async () => {
   orm = await MikroORM.init(
@@ -179,4 +181,14 @@ test('onPersist error', async () => {
 test('wrapTsFpDiMikroorm response', async () => {
   const resp = await wrapTsFpDiMikroorm(orm, async () => 'test')
   assert.strictEqual(resp, 'test')
+})
+
+test('persistance works for $const', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    $const(new TestEntity({ id: 1, value: 'test' }))
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
 })
