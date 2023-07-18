@@ -61,6 +61,7 @@ const fetchUser = async (id: number) => {
   return em().findOne(UserEntity, { id })
 }
 
+// diOnce, dic also supported
 const $user = dis<UserEntity | null>((state, payload) =>
   state ? wrap(state).assign(payload) : payload instanceof UserEntity ? payload : new UserEntity(payload)
 )
