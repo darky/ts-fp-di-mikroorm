@@ -38,9 +38,14 @@ const $store = dis(
   null
 )
 
-const $storeMultiple = dis(
+const $storeArray = dis(
   (state: TestEntity[], payload: Partial<TestEntity>) => state.concat(new TestEntity(payload)),
   []
+)
+
+const $storeMap = dis(
+  (state, payload: TestEntity) => new Map(state).set(payload.id, new TestEntity(payload)),
+  new Map<number, TestEntity>()
 )
 
 const $const = dic<TestEntity>()
@@ -76,10 +81,23 @@ test('persistance works for $store', async () => {
   assert.strictEqual(persisted?.value, 'test')
 })
 
-test('persistance works for $store (multiple entities)', async () => {
+test('persistance works for $store (array)', async () => {
   await wrapTsFpDiMikroorm(orm, async () => {
-    $storeMultiple({ value: 'test' })
-    $storeMultiple({ value: 'test2' })
+    $storeArray({ value: 'test' })
+    $storeArray({ value: 'test2' })
+  })
+
+  const persisted = await orm.em.fork().find(TestEntity, { $or: [{ id: 1 }, { id: 2 }] }, { orderBy: { id: 'ASC' } })
+  assert.strictEqual(persisted[0]?.id, 1)
+  assert.strictEqual(persisted[0]?.value, 'test')
+  assert.strictEqual(persisted[1]?.id, 2)
+  assert.strictEqual(persisted[1]?.value, 'test2')
+})
+
+test('persistance works for $store (map)', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    $storeMap({ value: 'test', id: 1, version: 1 })
+    $storeMap({ value: 'test2', id: 2, version: 1 })
   })
 
   const persisted = await orm.em.fork().find(TestEntity, { $or: [{ id: 1 }, { id: 2 }] }, { orderBy: { id: 'ASC' } })

@@ -1,4 +1,5 @@
 import { EntityManager, MikroORM } from '@mikro-orm/core'
+import { types } from 'node:util'
 import { diDep, diHas, diInit, diSet, als } from 'ts-fp-di'
 
 const TS_FP_DI_MIKROORM_EM = 'ts-fp-di-mikroorm-em'
@@ -38,6 +39,9 @@ export const entityConstructor = <T extends object>(self: T, ent: T) =>
 const persistIfEntity = (maybeEntity: unknown) => {
   if (Array.isArray(maybeEntity)) {
     return maybeEntity.forEach(persistIfEntity)
+  }
+  if (types.isMap(maybeEntity)) {
+    return Array.from(maybeEntity.values()).forEach(persistIfEntity)
   }
   if (!isEntity(maybeEntity)) {
     return
