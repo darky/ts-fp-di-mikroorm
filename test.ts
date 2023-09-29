@@ -24,6 +24,8 @@ class TestEntity {
   version!: number
 
   $forDelete?: boolean
+
+  $noPersist?: boolean
 }
 
 export class MikroORMEventsSubscriber implements EventSubscriber {
@@ -221,4 +223,13 @@ test('persistance works for diMap', async () => {
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
   assert.strictEqual(persisted?.id, 1)
   assert.strictEqual(persisted?.value, 'test')
+})
+
+test('ignore persistance', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    $const(new TestEntity({ id: 1, value: 'test', $noPersist: true }))
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted, null)
 })

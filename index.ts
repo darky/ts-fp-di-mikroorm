@@ -50,6 +50,9 @@ const persistIfEntity = (maybeEntity: unknown) => {
   if (!isEntity(maybeEntity)) {
     return
   }
+  if (maybeEntity.$noPersist) {
+    return
+  }
   if (maybeEntity.$forDelete) {
     diDep<EntityManager>(TS_FP_DI_MIKROORM_EM).remove(maybeEntity)
   } else {
@@ -57,7 +60,9 @@ const persistIfEntity = (maybeEntity: unknown) => {
   }
 }
 
-const isEntity = (maybeEntity: unknown): maybeEntity is { $forDelete?: boolean; [key: string]: unknown } =>
+const isEntity = (
+  maybeEntity: unknown
+): maybeEntity is { $forDelete?: boolean; $noPersist?: boolean; [key: string]: unknown } =>
   diDep<Set<unknown>>(TS_FP_DI_MIKROORM_ENTITIES).has(
     (Object.getPrototypeOf(maybeEntity ?? {}) as { constructor: unknown }).constructor
   )
