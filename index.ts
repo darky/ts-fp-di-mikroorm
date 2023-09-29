@@ -15,7 +15,11 @@ export const wrapTsFpDiMikroorm = async <T>(orm: MikroORM, cb: () => Promise<T>)
 
     const resp = await cb()
 
-    persistIfEntity([...(als.getStore()?.state.values() ?? []), ...(als.getStore()?.once.values() ?? [])])
+    persistIfEntity([
+      ...(als.getStore()?.state.values() ?? []),
+      ...(als.getStore()?.once.values() ?? []),
+      ...(als.getStore()?.derived.values() ?? []),
+    ])
 
     await em.flush()
 

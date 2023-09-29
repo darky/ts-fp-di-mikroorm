@@ -3,7 +3,7 @@ import { defineConfig } from '@mikro-orm/better-sqlite'
 import test, { afterEach, beforeEach } from 'node:test'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
 import assert from 'node:assert'
-import { dic, dis } from 'ts-fp-di'
+import { diMap, dic, dis } from 'ts-fp-di'
 
 let orm: MikroORM
 let insertedEntitiesViaEvent: unknown[] = []
@@ -204,6 +204,18 @@ test('wrapTsFpDiMikroorm response', async () => {
 test('persistance works for $const', async () => {
   await wrapTsFpDiMikroorm(orm, async () => {
     $const(new TestEntity({ id: 1, value: 'test' }))
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
+
+test('persistance works for diMap', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const id = dic<number>()
+    id(1)
+    diMap(id => new TestEntity({ id, value: 'test' }), id)()
   })
 
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })

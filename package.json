@@ -35,6 +35,6 @@
   },
   "peerDependencies": {
     "@mikro-orm/core": "^5.8.4",
-    "ts-fp-di": "^0.15.0"
+    "ts-fp-di": "^0.17.1"
   }
 }
