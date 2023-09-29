@@ -61,7 +61,7 @@ const fetchUser = async (id: number) => {
   return em().findOne(UserEntity, { id })
 }
 
-// diOnce, dic also supported
+// diOnce, dic, diMap also supported
 const $user = dis<UserEntity | null>((state, payload) =>
   state ? wrap(state).assign(payload) : payload instanceof UserEntity ? payload : new UserEntity(payload)
 )
@@ -85,6 +85,13 @@ await wrapTsFpDiMikroorm(orm, async () => {
 })
 
 // user Vasya realized that he is Petya in DB now
+
+await wrapTsFpDiMikroorm(orm, async () => {
+  $user(await fetchUser(1))
+  $user({ $noPersist: true })
+})
+
+// Persistance to DB ignored
 
 await wrapTsFpDiMikroorm(orm, async () => {
   $user(await fetchUser(1))
