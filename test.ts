@@ -233,3 +233,15 @@ test('ignore persistance', async () => {
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
   assert.strictEqual(persisted, null)
 })
+
+test('persistance idempotence', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test' })
+    $const(entity)
+    $store(entity)
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
