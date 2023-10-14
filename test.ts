@@ -52,6 +52,8 @@ const $storeMap = dis(
 
 const $const = dic<TestEntity>()
 
+const $ref = dic<TestEntity>()
+
 beforeEach(async () => {
   orm = await MikroORM.init(
     defineConfig({
@@ -239,6 +241,22 @@ test('persistance idempotence', async () => {
     const entity = new TestEntity({ id: 1, value: 'test' })
     $const(entity)
     $store(entity)
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
+
+test('reference support', async () => {
+  await orm.em.fork().insert(TestEntity, {
+    id: 1,
+    value: 'wrong',
+  })
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const ref = em().getReference(TestEntity, 1)
+    ref.value = 'test'
+    $ref(ref)
   })
 
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
