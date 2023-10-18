@@ -1,4 +1,4 @@
-import { EntityManager, MikroORM } from '@mikro-orm/core'
+import { EntityManager, EntitySchema, MikroORM, wrap } from '@mikro-orm/core'
 import { types } from 'node:util'
 import { diDep, diHas, diInit, diSet, als } from 'ts-fp-di'
 
@@ -15,7 +15,7 @@ export const wrapTsFpDiMikroorm = async <T>(orm: MikroORM, cb: () => Promise<T>)
 
     const resp = await cb()
 
-    persistIfEntity([
+    await persistIfEntity([
       ...(als.getStore()?.state.values() ?? []),
       ...(als.getStore()?.once.values() ?? []),
       ...(als.getStore()?.derived.values() ?? []),
@@ -40,12 +40,18 @@ export const onPersist = (cb: () => Promise<void>) => {
 export const entityConstructor = <T extends object>(self: T, ent: T) =>
   Object.entries(ent).forEach(([key, val]) => Reflect.set(self, key, val))
 
-const persistIfEntity = (maybeEntity: unknown) => {
+const persistIfEntity = async (maybeEntity: unknown) => {
   if (Array.isArray(maybeEntity)) {
-    return maybeEntity.forEach(persistIfEntity)
+    for (const item of maybeEntity) {
+      await persistIfEntity(item)
+    }
+    return
   }
   if (types.isMap(maybeEntity)) {
-    return Array.from(maybeEntity.values()).forEach(persistIfEntity)
+    for (const item of Array.from(maybeEntity.values())) {
+      await persistIfEntity(item)
+    }
+    return
   }
   if (!isEntity(maybeEntity)) {
     return
@@ -53,16 +59,29 @@ const persistIfEntity = (maybeEntity: unknown) => {
   if (maybeEntity.$noPersist) {
     return
   }
+
+  const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
+  const upsertEntity = maybeEntity.$forUpsert
+    ? await Promise.resolve(em.getMetadata().get(maybeEntity.constructor.name).primaryKeys)
+        .then(pks => em.findOne(maybeEntity.constructor, Object.fromEntries(pks.map(pk => [pk, maybeEntity[pk]]))))
+        .then(ent => (ent ? wrap(ent).assign({ ...ent, ...maybeEntity }) : maybeEntity))
+    : null
+
   if (maybeEntity.$forDelete) {
-    diDep<EntityManager>(TS_FP_DI_MIKROORM_EM).remove(maybeEntity)
+    em.remove(maybeEntity)
   } else {
-    diDep<EntityManager>(TS_FP_DI_MIKROORM_EM).persist(maybeEntity)
+    em.persist(upsertEntity ?? maybeEntity)
   }
 }
 
 const isEntity = (
   maybeEntity: unknown
-): maybeEntity is { $forDelete?: boolean; $noPersist?: boolean; [key: string]: unknown } =>
+): maybeEntity is EntitySchema & {
+  $forDelete?: boolean
+  $forUpsert?: boolean
+  $noPersist?: boolean
+  [key: string]: unknown
+} =>
   diDep<Set<unknown>>(TS_FP_DI_MIKROORM_ENTITIES).has(
     (Object.getPrototypeOf(maybeEntity ?? {}) as { constructor: unknown }).constructor
   )

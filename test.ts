@@ -25,6 +25,8 @@ class TestEntity {
 
   $forDelete?: boolean
 
+  $forUpsert?: boolean
+
   $noPersist?: boolean
 }
 
@@ -257,6 +259,32 @@ test('reference support', async () => {
     const ref = em().getReference(TestEntity, 1)
     ref.value = 'test'
     $ref(ref)
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
+
+test('upsert support as update', async () => {
+  await orm.em.fork().insert(TestEntity, {
+    id: 1,
+    value: 'wrong',
+  })
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true, version: 1 })
+    $const(entity)
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
+
+test('upsert support as insert', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true })
+    $const(entity)
   })
 
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
