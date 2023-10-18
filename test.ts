@@ -272,7 +272,7 @@ test('upsert support as update', async () => {
     value: 'wrong',
   })
   await wrapTsFpDiMikroorm(orm, async () => {
-    const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true, version: 1 })
+    const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true })
     $const(entity)
   })
 

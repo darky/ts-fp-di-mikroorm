@@ -1,4 +1,4 @@
-import { EntityManager, EntitySchema, MikroORM, wrap } from '@mikro-orm/core'
+import { EntityManager, EntitySchema, MikroORM } from '@mikro-orm/core'
 import { types } from 'node:util'
 import { diDep, diHas, diInit, diSet, als } from 'ts-fp-di'
 
@@ -64,7 +64,7 @@ const persistIfEntity = async (maybeEntity: unknown) => {
   const upsertEntity = maybeEntity.$forUpsert
     ? await Promise.resolve(em.getMetadata().get(maybeEntity.constructor.name).primaryKeys)
         .then(pks => em.findOne(maybeEntity.constructor, Object.fromEntries(pks.map(pk => [pk, maybeEntity[pk]]))))
-        .then(ent => (ent ? wrap(ent).assign({ ...ent, ...maybeEntity }) : maybeEntity))
+        .then(ent => (ent ? (Object.entries(maybeEntity).forEach(([k, v]) => (ent[k] = v)), ent) : maybeEntity))
     : null
 
   if (maybeEntity.$forDelete) {
