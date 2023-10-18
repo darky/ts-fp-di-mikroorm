@@ -64,7 +64,14 @@ const persistIfEntity = async (maybeEntity: unknown) => {
   const upsertEntity = maybeEntity.$forUpsert
     ? await Promise.resolve(em.getMetadata().get(maybeEntity.constructor.name).primaryKeys)
         .then(pks => em.findOne(maybeEntity.constructor, Object.fromEntries(pks.map(pk => [pk, maybeEntity[pk]]))))
-        .then(ent => (ent ? (Object.entries(maybeEntity).forEach(([k, v]) => (ent[k] = v)), ent) : maybeEntity))
+        .then(ent =>
+          ent
+            ? (Object.entries(maybeEntity)
+                .filter(([, v]) => v !== void 0)
+                .forEach(([k, v]) => (ent[k] = v)),
+              ent)
+            : maybeEntity
+        )
     : null
 
   if (maybeEntity.$forDelete) {

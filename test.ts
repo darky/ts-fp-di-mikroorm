@@ -23,6 +23,9 @@ class TestEntity {
   @Property({ version: true })
   version!: number
 
+  @Property({ defaultRaw: 'current_timestamp', type: 'Date' })
+  createdAt?: Date
+
   $forDelete?: boolean
 
   $forUpsert?: boolean
@@ -185,7 +188,10 @@ test('onPersist success', async () => {
   await wrapTsFpDiMikroorm(orm, async () => {
     $store({ value: 'test' })
     onPersist(async () => {
-      assert.deepStrictEqual($store(), new TestEntity({ id: 1, value: 'test', version: 1 }))
+      assert.deepStrictEqual(
+        $store(),
+        new TestEntity({ id: 1, value: 'test', version: 1, createdAt: $store()?.createdAt ?? new Date() })
+      )
     })
   })
 })
@@ -282,6 +288,17 @@ test('upsert support as update', async () => {
 })
 
 test('upsert support as insert', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true })
+    $const(entity)
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
+
+test('upsert should skip undefined values', async () => {
   await wrapTsFpDiMikroorm(orm, async () => {
     const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true })
     $const(entity)
