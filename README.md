@@ -87,6 +87,12 @@ await wrapTsFpDiMikroorm(orm, async () => {
 // user Vasya realized that he is Petya in DB now
 
 await wrapTsFpDiMikroorm(orm, async () => {
+  $user({ name: 'Petya', $forUpsert: true })
+})
+
+// upsert also works, Entity fetching will be happens on flush afterwards
+
+await wrapTsFpDiMikroorm(orm, async () => {
   $user(await fetchUser(1))
   $user({ $noPersist: true })
 })
