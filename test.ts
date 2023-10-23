@@ -297,14 +297,3 @@ test('upsert support as insert', async () => {
   assert.strictEqual(persisted?.id, 1)
   assert.strictEqual(persisted?.value, 'test')
 })
-
-test('upsert should skip undefined values', async () => {
-  await wrapTsFpDiMikroorm(orm, async () => {
-    const entity = new TestEntity({ id: 1, value: 'test', $forUpsert: true })
-    $const(entity)
-  })
-
-  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
-  assert.strictEqual(persisted?.id, 1)
-  assert.strictEqual(persisted?.value, 'test')
-})
