@@ -15,11 +15,14 @@ export const wrapTsFpDiMikroorm = async <T>(orm: MikroORM, cb: () => Promise<T>)
 
     const resp = await cb()
 
-    await persistIfEntity([
-      ...(als.getStore()?.state.values() ?? []),
-      ...(als.getStore()?.once.values() ?? []),
-      ...(als.getStore()?.derived.values() ?? []),
-    ])
+    await persistIfEntity(
+      [
+        ...(als.getStore()?.state.values() ?? []),
+        ...(als.getStore()?.once.values() ?? []),
+        ...(als.getStore()?.derived.values() ?? []),
+      ],
+      new Set()
+    )
 
     await em.flush()
 
@@ -40,23 +43,27 @@ export const onPersist = (cb: () => Promise<void>) => {
 export const entityConstructor = <T extends object>(self: T, ent: T) =>
   Object.entries(ent).forEach(([key, val]) => Reflect.set(self, key, val))
 
-const persistIfEntity = async (maybeEntity: unknown) => {
+const persistIfEntity = async (maybeEntity: unknown, entityDeduplify: Set<unknown>) => {
   if (Array.isArray(maybeEntity)) {
     for (const item of maybeEntity) {
-      await persistIfEntity(item)
+      await persistIfEntity(item, entityDeduplify)
     }
     return
   }
   if (types.isMap(maybeEntity)) {
     for (const item of Array.from(maybeEntity.values())) {
-      await persistIfEntity(item)
+      await persistIfEntity(item, entityDeduplify)
     }
     return
   }
+
   if (!isEntity(maybeEntity)) {
     return
   }
   if (maybeEntity.$noPersist) {
+    return
+  }
+  if (entityDeduplify.has(maybeEntity)) {
     return
   }
 
@@ -73,6 +80,8 @@ const persistIfEntity = async (maybeEntity: unknown) => {
             : maybeEntity
         )
     : null
+
+  entityDeduplify.add(maybeEntity)
 
   if (maybeEntity.$forDelete) {
     em.remove(maybeEntity)
