@@ -1,9 +1,9 @@
 import { Entity, EventArgs, EventSubscriber, MikroORM, PrimaryKey, Property, wrap } from '@mikro-orm/core'
-import { defineConfig } from '@mikro-orm/better-sqlite'
+import { EntityManager, defineConfig } from '@mikro-orm/better-sqlite'
 import test, { afterEach, beforeEach } from 'node:test'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
 import assert from 'node:assert'
-import { diMap, dic, dis } from 'ts-fp-di'
+import { diDep, diMap, dic, dis } from 'ts-fp-di'
 
 let orm: MikroORM
 let insertedEntitiesViaEvent: unknown[] = []
@@ -244,8 +244,15 @@ test('ignore persistance', async () => {
   assert.strictEqual(persisted, null)
 })
 
-test('persistance idempotence', async () => {
+test('persistance deduplication', async () => {
+  let persistCalls = 0
   await wrapTsFpDiMikroorm(orm, async () => {
+    const em = diDep<EntityManager>('ts-fp-di-mikroorm-em')
+    const origPersist = em.persist
+    em.persist = function (...args) {
+      persistCalls++
+      return origPersist.apply(this, args)
+    }
     const entity = new TestEntity({ id: 1, value: 'test' })
     $const(entity)
     $store(entity)
@@ -254,6 +261,7 @@ test('persistance idempotence', async () => {
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
   assert.strictEqual(persisted?.id, 1)
   assert.strictEqual(persisted?.value, 'test')
+  assert.strictEqual(persistCalls, 1)
 })
 
 test('reference support', async () => {
