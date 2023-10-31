@@ -87,6 +87,12 @@ await wrapTsFpDiMikroorm(orm, async () => {
 // user Vasya realized that he is Petya in DB now
 
 await wrapTsFpDiMikroorm(orm, async () => {
+  $user({ id: 1, name: 'Petya', $forUpdate: true })
+})
+
+// if you know id, you can update entity without fetching
+
+await wrapTsFpDiMikroorm(orm, async () => {
   $user({ name: 'Petya', $forUpsert: true })
 })
 
