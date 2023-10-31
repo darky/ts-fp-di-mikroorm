@@ -5,6 +5,7 @@ import { diDep, diHas, diInit, diSet, als } from 'ts-fp-di'
 type Entity = EntitySchema & {
   $forDelete?: boolean
   $forUpsert?: boolean
+  $forUpdate?: boolean
   $noPersist?: boolean
   [key: string]: unknown
 }
@@ -82,22 +83,30 @@ const fetchExistingEntity = (entity: Entity) => {
 
 const persistEntity = async (entity: Entity) => {
   const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
-  const upsertEntity = entity.$forUpsert
-    ? await fetchExistingEntity(entity).then(ent =>
-        ent
-          ? (Object.entries(entity)
-              .filter(([, v]) => v !== void 0)
-              .forEach(([k, v]) => (ent[k] = v)),
-            ent)
-          : entity
-      )
-    : null
 
   if (entity.$forDelete) {
-    em.remove(entity)
-  } else {
-    em.persist(upsertEntity ?? entity)
+    return em.remove(entity)
   }
+
+  const updated = entity.$forUpdate
+    ? em.getReference(
+        entity.constructor.name,
+        em
+          .getMetadata()
+          .get(entity.constructor.name)
+          .primaryKeys.map(pk => entity[pk])
+      )
+    : entity.$forUpsert
+    ? await fetchExistingEntity(entity)
+    : null
+
+  if (updated) {
+    Object.entries(entity)
+      .filter(([, v]) => v !== void 0)
+      .forEach(([k, v]) => (updated[k] = v))
+  }
+
+  return em.persist(updated ?? entity)
 }
 
 const isEntity = (maybeEntity: unknown): maybeEntity is Entity =>

@@ -1,4 +1,13 @@
-import { Entity, EventArgs, EventSubscriber, MikroORM, PrimaryKey, Property, wrap } from '@mikro-orm/core'
+import {
+  Entity,
+  EventArgs,
+  EventSubscriber,
+  MikroORM,
+  OptimisticLockError,
+  PrimaryKey,
+  Property,
+  wrap,
+} from '@mikro-orm/core'
 import { EntityManager, defineConfig } from '@mikro-orm/better-sqlite'
 import test, { afterEach, beforeEach } from 'node:test'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
@@ -29,6 +38,8 @@ class TestEntity {
   $forDelete?: boolean
 
   $forUpsert?: boolean
+
+  $forUpdate?: boolean
 
   $noPersist?: boolean
 }
@@ -304,4 +315,28 @@ test('upsert support as insert', async () => {
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
   assert.strictEqual(persisted?.id, 1)
   assert.strictEqual(persisted?.value, 'test')
+})
+
+test('update support', async () => {
+  await orm.em.fork().insert(TestEntity, {
+    id: 1,
+    value: 'wrong',
+  })
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test', $forUpdate: true })
+    $const(entity)
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
+})
+
+test('update should not upsert', async () => {
+  const err = await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test', $forUpdate: true })
+    $const(entity)
+  }).catch(e => e)
+
+  assert.strictEqual(err instanceof OptimisticLockError, true)
 })
