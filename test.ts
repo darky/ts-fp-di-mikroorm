@@ -14,6 +14,7 @@ import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
 import assert from 'node:assert'
 import { diDep, diMap, dic, dis } from 'ts-fp-di'
 import { Option, some } from 'fp-ts/Option'
+import { Either, right } from 'fp-ts/lib/Either'
 
 let orm: MikroORM
 let insertedEntitiesViaEvent: unknown[] = []
@@ -75,6 +76,11 @@ const $storeSet = dis(
 const $storeSome = dis(
   (state, payload: TestEntity) => [...state, some(new TestEntity(payload))],
   [] as Option<TestEntity>[]
+)
+
+const $storeRight = dis(
+  (state, payload: TestEntity) => [...state, right(new TestEntity(payload))],
+  [] as Either<unknown, TestEntity>[]
 )
 
 const $const = dic<TestEntity>()
@@ -155,6 +161,19 @@ test('persistance works for $store (fp-ts Some)', async () => {
   await wrapTsFpDiMikroorm(orm, async () => {
     $storeSome({ value: 'test', id: 1, version: 1 })
     $storeSome({ value: 'test2', id: 2, version: 1 })
+  })
+
+  const persisted = await orm.em.fork().find(TestEntity, { $or: [{ id: 1 }, { id: 2 }] }, { orderBy: { id: 'ASC' } })
+  assert.strictEqual(persisted[0]?.id, 1)
+  assert.strictEqual(persisted[0]?.value, 'test')
+  assert.strictEqual(persisted[1]?.id, 2)
+  assert.strictEqual(persisted[1]?.value, 'test2')
+})
+
+test('persistance works for $store (fp-ts Right)', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    $storeRight({ value: 'test', id: 1, version: 1 })
+    $storeRight({ value: 'test2', id: 2, version: 1 })
   })
 
   const persisted = await orm.em.fork().find(TestEntity, { $or: [{ id: 1 }, { id: 2 }] }, { orderBy: { id: 'ASC' } })
