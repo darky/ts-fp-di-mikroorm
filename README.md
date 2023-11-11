@@ -36,7 +36,7 @@ Only need to use `em` helper for MikroORM, which can help to consider context of
 ```ts
 import { Entity, PrimaryKey, Property, wrap } from '@mikro-orm/core'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from 'ts-fp-di-mikroorm'
-import { dis } from 'ts-fp-di'
+import { dis, dic } from 'ts-fp-di'
 
 @Entity()
 class UserEntity {
@@ -65,6 +65,10 @@ const fetchUser = async (id: number) => {
 const $user = dis<UserEntity | null>((state, payload) =>
   state ? wrap(state).assign(payload) : payload instanceof UserEntity ? payload : new UserEntity(payload)
 )
+
+// Entities can be placed in Array, Set, Map (as values) and fp-ts Some
+// Persistance for them will works
+const $users = dic<UserEntity[]>()
 
 // `wrapTsFpDiMikroorm` here just for example
 // Need to use `wrapTsFpDiMikroorm` as middleware of your framework, see example above
@@ -111,4 +115,14 @@ await wrapTsFpDiMikroorm(orm, async () => {
 })
 
 // user Petya go away from DB
+
+await wrapTsFpDiMikroorm(orm, async () => {
+  $users([
+    new UserEntity({ id: 1, name: 'Petya', $forUpdate: true }),
+    new UserEntity({ id: 2, name: 'Vasya', $forUpdate: true }),
+    new UserEntity({ id: 3, name: 'Kolya', $forUpdate: true }),
+  ])
+})
+
+// all company will be persisted, despite the fact that they are in an Array
 ```
