@@ -10,6 +10,8 @@ type Entity = EntitySchema & {
   [key: string]: unknown
 }
 
+type Some = { _tag: 'Some'; value: unknown }
+
 const TS_FP_DI_MIKROORM_EM = 'ts-fp-di-mikroorm-em'
 const TS_FP_DI_MIKROORM_ENTITIES = 'ts-fp-di-mikroorm-entities'
 const TS_FP_DI_MIKROORM_ON_PERSIST_CB = 'ts-fp-di-mikroorm-on-persist-cb'
@@ -58,6 +60,9 @@ const entitiesSet = (maybeEntity: unknown, entities = new Set<Entity>()): Set<En
   }
   if (types.isMap(maybeEntity) || types.isSet(maybeEntity)) {
     return arrayToSet(Array.from(maybeEntity.values()), entities)
+  }
+  if (isSome(maybeEntity)) {
+    return entitiesSet(maybeEntity.value, entities)
   }
   if (!isEntity(maybeEntity)) {
     return entities
@@ -108,6 +113,9 @@ const persistEntity = async (entity: Entity) => {
 
   return em.persist(updated ?? entity)
 }
+
+const isSome = (maybeEntity: unknown): maybeEntity is Some =>
+  maybeEntity != null && (maybeEntity as Some)._tag === 'Some' && (maybeEntity as Some).value != null
 
 const isEntity = (maybeEntity: unknown): maybeEntity is Entity =>
   diDep<Set<unknown>>(TS_FP_DI_MIKROORM_ENTITIES).has(
