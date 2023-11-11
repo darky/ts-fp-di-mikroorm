@@ -56,7 +56,7 @@ const entitiesSet = (maybeEntity: unknown, entities = new Set<Entity>()): Set<En
   if (Array.isArray(maybeEntity)) {
     return arrayToSet(maybeEntity, entities)
   }
-  if (types.isMap(maybeEntity)) {
+  if (types.isMap(maybeEntity) || types.isSet(maybeEntity)) {
     return arrayToSet(Array.from(maybeEntity.values()), entities)
   }
   if (!isEntity(maybeEntity)) {

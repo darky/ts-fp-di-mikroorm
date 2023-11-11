@@ -66,6 +66,11 @@ const $storeMap = dis(
   new Map<number, TestEntity>()
 )
 
+const $storeSet = dis(
+  (state, payload: TestEntity) => new Set(state).add(new TestEntity(payload)),
+  new Set<TestEntity>()
+)
+
 const $const = dic<TestEntity>()
 
 const $ref = dic<TestEntity>()
@@ -118,6 +123,19 @@ test('persistance works for $store (map)', async () => {
   await wrapTsFpDiMikroorm(orm, async () => {
     $storeMap({ value: 'test', id: 1, version: 1 })
     $storeMap({ value: 'test2', id: 2, version: 1 })
+  })
+
+  const persisted = await orm.em.fork().find(TestEntity, { $or: [{ id: 1 }, { id: 2 }] }, { orderBy: { id: 'ASC' } })
+  assert.strictEqual(persisted[0]?.id, 1)
+  assert.strictEqual(persisted[0]?.value, 'test')
+  assert.strictEqual(persisted[1]?.id, 2)
+  assert.strictEqual(persisted[1]?.value, 'test2')
+})
+
+test('persistance works for $store (set)', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    $storeSet({ value: 'test', id: 1, version: 1 })
+    $storeSet({ value: 'test2', id: 2, version: 1 })
   })
 
   const persisted = await orm.em.fork().find(TestEntity, { $or: [{ id: 1 }, { id: 2 }] }, { orderBy: { id: 'ASC' } })
