@@ -12,6 +12,7 @@ type Entity = EntitySchema & {
 
 type Some = { _tag: 'Some'; value: unknown }
 type Right = { _tag: 'Right'; right: unknown }
+type Left = { _tag: 'Left'; left: unknown }
 
 const TS_FP_DI_MIKROORM_EM = 'ts-fp-di-mikroorm-em'
 const TS_FP_DI_MIKROORM_ENTITIES = 'ts-fp-di-mikroorm-entities'
@@ -56,6 +57,9 @@ export const entityConstructor = <T extends object>(self: T, ent: T) =>
   Object.entries(ent).forEach(([key, val]) => Reflect.set(self, key, val))
 
 const entitiesSet = (maybeEntity: unknown, entities = new Set<Entity>()): Set<Entity> => {
+  if (isLeft(maybeEntity) && maybeEntity.left instanceof Error) {
+    throw maybeEntity.left
+  }
   if (Array.isArray(maybeEntity)) {
     return arrayToSet(maybeEntity, entities)
   }
@@ -123,6 +127,9 @@ const isSome = (maybeEntity: unknown): maybeEntity is Some =>
 
 const isRight = (maybeEntity: unknown): maybeEntity is Right =>
   maybeEntity != null && (maybeEntity as Right)._tag === 'Right' && (maybeEntity as Right).right != null
+
+const isLeft = (maybeEntity: unknown): maybeEntity is Left =>
+  maybeEntity != null && (maybeEntity as Left)._tag === 'Left' && (maybeEntity as Left).left != null
 
 const isEntity = (maybeEntity: unknown): maybeEntity is Entity =>
   diDep<Set<unknown>>(TS_FP_DI_MIKROORM_ENTITIES).has(

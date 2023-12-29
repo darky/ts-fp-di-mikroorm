@@ -14,7 +14,7 @@ import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
 import assert from 'node:assert'
 import { diDep, diMap, dic, dis } from 'ts-fp-di'
 import { Option, some } from 'fp-ts/Option'
-import { Either, right } from 'fp-ts/lib/Either'
+import { Either, left, right } from 'fp-ts/lib/Either'
 
 let orm: MikroORM
 let insertedEntitiesViaEvent: unknown[] = []
@@ -82,6 +82,8 @@ const $storeRight = dis(
   (state, payload: TestEntity) => [...state, right(new TestEntity(payload))],
   [] as Either<unknown, TestEntity>[]
 )
+
+const $storeLeftError = dis(state => [...state, left(new Error('test'))], [] as Either<unknown, TestEntity>[])
 
 const $const = dic<TestEntity>()
 
@@ -181,6 +183,14 @@ test('persistance works for $store (fp-ts Right)', async () => {
   assert.strictEqual(persisted[0]?.value, 'test')
   assert.strictEqual(persisted[1]?.id, 2)
   assert.strictEqual(persisted[1]?.value, 'test2')
+})
+
+test('persistance throws for $store (fp-ts Left Error)', async () => {
+  const resp = wrapTsFpDiMikroorm(orm, async () => {
+    $storeLeftError(true)
+  })
+
+  await assert.rejects(() => resp, new Error('test'))
 })
 
 test('persistance works for $store (updating case)', async () => {
