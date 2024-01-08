@@ -32,7 +32,7 @@ class TestEntity {
   value!: string
 
   @Property({ version: true })
-  version!: number
+  version?: number
 
   @Property({ defaultRaw: 'current_timestamp', type: 'Date' })
   createdAt?: Date
