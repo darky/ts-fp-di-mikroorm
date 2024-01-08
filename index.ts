@@ -98,20 +98,10 @@ const persistEntity = async (entity: Entity) => {
   const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
 
   if (entity.$forDelete) {
-    return em.remove(entity)
+    return em.remove(getRef(entity))
   }
 
-  const updated = entity.$forUpdate
-    ? em.getReference(
-        entity.constructor.name,
-        em
-          .getMetadata()
-          .get(entity.constructor.name)
-          .primaryKeys.map(pk => entity[pk])
-      )
-    : entity.$forUpsert
-    ? await fetchExistingEntity(entity)
-    : null
+  const updated = entity.$forUpdate ? getRef(entity) : entity.$forUpsert ? await fetchExistingEntity(entity) : null
 
   if (updated) {
     Object.entries(entity)
@@ -135,3 +125,15 @@ const isEntity = (maybeEntity: unknown): maybeEntity is Entity =>
   diDep<Set<unknown>>(TS_FP_DI_MIKROORM_ENTITIES).has(
     (Object.getPrototypeOf(maybeEntity ?? {}) as { constructor: unknown }).constructor
   )
+
+const getRef = (entity: Entity) => {
+  const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
+
+  return em.getReference(
+    entity.constructor.name,
+    em
+      .getMetadata()
+      .get(entity.constructor.name)
+      .primaryKeys.map(pk => entity[pk])
+  )
+}

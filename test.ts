@@ -207,13 +207,24 @@ test('persistance works for $store (updating case)', async () => {
   assert.strictEqual(persisted?.value, 'test2')
 })
 
-test('persistance works for $store (deleting case)', async () => {
+test('persistance works for $store (deleting fetching case)', async () => {
   await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
 
   await wrapTsFpDiMikroorm(orm, async () => {
     const exists = await em().findOne(TestEntity, { id: 1 })
     $store(exists!)
     $store({ $forDelete: true })
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted, null)
+})
+
+test('persistance works for $store (deleting case by reference)', async () => {
+  await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
+
+  await wrapTsFpDiMikroorm(orm, async () => {
+    $store(new TestEntity({ id: 1, $forDelete: true }))
   })
 
   const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
