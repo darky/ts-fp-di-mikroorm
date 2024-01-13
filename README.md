@@ -66,7 +66,7 @@ const $user = dis<UserEntity | null>((state, payload) =>
   state ? wrap(state).assign(payload) : payload instanceof UserEntity ? payload : new UserEntity(payload)
 )
 
-// Entities can be placed in Array, Set, Map (as values) and fp-ts Some, Right
+// Entities can be placed in Array, Promise, Set, Map (as values) and fp-ts Some, Right
 // Persistance for them will works
 const $users = dic<UserEntity[]>()
 
