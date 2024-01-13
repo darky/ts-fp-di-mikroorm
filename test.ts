@@ -89,6 +89,8 @@ const $const = dic<TestEntity>()
 
 const $ref = dic<TestEntity>()
 
+const $promise = dic<Promise<TestEntity>>()
+
 beforeEach(async () => {
   orm = await MikroORM.init(
     defineConfig({
@@ -416,4 +418,15 @@ test('update should not upsert', async () => {
   }).catch(e => e)
 
   assert.strictEqual(err instanceof OptimisticLockError, true)
+})
+
+test('promise support', async () => {
+  await wrapTsFpDiMikroorm(orm, async () => {
+    const entity = new TestEntity({ id: 1, value: 'test' })
+    $promise(Promise.resolve(entity))
+  })
+
+  const persisted = await orm.em.fork().findOne(TestEntity, { id: 1 })
+  assert.strictEqual(persisted?.id, 1)
+  assert.strictEqual(persisted?.value, 'test')
 })

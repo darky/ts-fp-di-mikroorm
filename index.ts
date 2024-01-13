@@ -27,11 +27,11 @@ export const wrapTsFpDiMikroorm = async <T>(orm: MikroORM, cb: () => Promise<T>)
 
     const resp = await cb()
 
-    const allState = [
+    const allState = await Promise.all([
       ...(als.getStore()?.state.values() ?? []),
       ...(als.getStore()?.once.values() ?? []),
       ...(als.getStore()?.derived.values() ?? []),
-    ]
+    ])
     const entities = Array.from(entitiesSet(allState).values())
     const entitiesForUpsert = entities.filter(ent => !!ent.$forUpsert)
 
