@@ -98,7 +98,7 @@ const persistEntity = async (entity: Entity) => {
   const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
 
   if (entity.$forDelete) {
-    return em.remove(getRef(entity))
+    return em.remove(entity)
   }
 
   const updated = entity.$forUpdate ? getRef(entity) : entity.$forUpsert ? await fetchExistingEntity(entity) : null
