@@ -18,7 +18,7 @@ const TS_FP_DI_MIKROORM_EM = 'ts-fp-di-mikroorm-em'
 const TS_FP_DI_MIKROORM_ENTITIES = 'ts-fp-di-mikroorm-entities'
 const TS_FP_DI_MIKROORM_ON_PERSIST_CB = 'ts-fp-di-mikroorm-on-persist-cb'
 
-export const wrapTsFpDiMikroorm = async <T>(orm: MikroORM, cb: () => Promise<T>): Promise<T> => {
+export const wrapTsFpDiMikroorm = async <T>(orm: Pick<MikroORM, 'em' | 'config'>, cb: () => Promise<T>): Promise<T> => {
   return await diInit(async () => {
     const em = orm.em.fork()
 
