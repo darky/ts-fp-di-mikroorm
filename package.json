@@ -1,6 +1,6 @@
 {
   "name": "ts-fp-di-mikroorm",
-  "version": "1.0.63",
+  "version": "1.0.65",
   "description": "Persist ts-fp-di State as MikroORM Entities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
