@@ -1,14 +1,6 @@
-import {
-  Entity,
-  EventArgs,
-  EventSubscriber,
-  MikroORM,
-  OptimisticLockError,
-  PrimaryKey,
-  Property,
-  wrap,
-} from '@mikro-orm/core'
-import { EntityManager, defineConfig } from '@mikro-orm/better-sqlite'
+import { EventArgs, EventSubscriber, MikroORM, OptimisticLockError, wrap } from '@mikro-orm/core'
+import { Entity, PrimaryKey, Property, ReflectMetadataProvider } from '@mikro-orm/decorators/legacy'
+import { EntityManager, SqliteDriver } from '@mikro-orm/sqlite'
 import test, { afterEach, beforeEach } from 'node:test'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from './index'
 import assert from 'node:assert'
@@ -92,19 +84,19 @@ const $ref = dic<TestEntity>()
 const $promise = dic<Promise<TestEntity>>()
 
 beforeEach(async () => {
-  orm = await MikroORM.init(
-    defineConfig({
-      // dbName: 'test.sqlite',
-      dbName: ':memory:',
-      debug: true,
-      entities: [TestEntity],
-      subscribers: [new MikroORMEventsSubscriber()],
-    })
-  )
-  await orm.getSchemaGenerator().dropSchema()
-  await orm.getSchemaGenerator().createSchema()
-  await orm.getSchemaGenerator().refreshDatabase()
-  await orm.getSchemaGenerator().clearDatabase()
+  orm = await MikroORM.init({
+    // dbName: 'test.sqlite',
+    dbName: ':memory:',
+    debug: true,
+    driver: SqliteDriver as any,
+    entities: [TestEntity],
+    metadataProvider: ReflectMetadataProvider,
+    subscribers: [new MikroORMEventsSubscriber()],
+  })
+  await orm.schema.drop()
+  await orm.schema.create()
+  await orm.schema.refresh()
+  await orm.schema.clear()
 })
 
 afterEach(async () => {
@@ -196,7 +188,10 @@ test('persistance throws for $store (fp-ts Left Error)', async () => {
 })
 
 test('persistance works for $store (updating case)', async () => {
-  await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
+  await orm.em
+    .fork()
+    .persist(new TestEntity({ id: 1, value: 'test' }))
+    .flush()
 
   await wrapTsFpDiMikroorm(orm, async () => {
     const exists = await em().findOne(TestEntity, { id: 1 })
@@ -210,7 +205,10 @@ test('persistance works for $store (updating case)', async () => {
 })
 
 test('persistance works for $store (deleting fetching case)', async () => {
-  await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
+  await orm.em
+    .fork()
+    .persist(new TestEntity({ id: 1, value: 'test' }))
+    .flush()
 
   await wrapTsFpDiMikroorm(orm, async () => {
     const exists = await em().findOne(TestEntity, { id: 1 })
@@ -223,7 +221,10 @@ test('persistance works for $store (deleting fetching case)', async () => {
 })
 
 test('persistance works for $store (deleting case by reference)', async () => {
-  await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
+  await orm.em
+    .fork()
+    .persist(new TestEntity({ id: 1, value: 'test' }))
+    .flush()
 
   await wrapTsFpDiMikroorm(orm, async () => {
     $store(new TestEntity({ id: 1, $forDelete: true }))
@@ -234,7 +235,10 @@ test('persistance works for $store (deleting case by reference)', async () => {
 })
 
 test('no persistance for not changed entity', async () => {
-  await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
+  await orm.em
+    .fork()
+    .persist(new TestEntity({ id: 1, value: 'test' }))
+    .flush()
   insertedEntitiesViaEvent = []
 
   await wrapTsFpDiMikroorm(orm, async () => {
@@ -257,7 +261,10 @@ test('no persistance on error', async () => {
 })
 
 test('optimistic lock', async () => {
-  await orm.em.fork().persistAndFlush(new TestEntity({ id: 1, value: 'test' }))
+  await orm.em
+    .fork()
+    .persist(new TestEntity({ id: 1, value: 'test' }))
+    .flush()
 
   await assert.rejects(async () => {
     await wrapTsFpDiMikroorm(orm, async () => {

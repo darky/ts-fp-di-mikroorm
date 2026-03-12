@@ -1,4 +1,4 @@
-import { EntityManager, EntitySchema, MikroORM } from '@mikro-orm/core'
+import { EntityManager, EntityName, EntitySchema, MikroORM } from '@mikro-orm/core'
 import { types } from 'node:util'
 import { diDep, diHas, diInit, diSet, als } from 'ts-fp-di'
 
@@ -90,7 +90,7 @@ const arrayToSet = (maybeEntity: unknown[], entities: Set<Entity>) => {
 
 const fetchExistingEntity = (entity: Entity) => {
   const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
-  const pks = em.getMetadata().get(entity.constructor.name).primaryKeys
+  const pks = em.getMetadata().getByClassName(entity.constructor.name).primaryKeys
   return em.findOne(entity.constructor, Object.fromEntries(pks.map(pk => [pk, entity[pk]])))
 }
 
@@ -130,10 +130,10 @@ const getRef = (entity: Entity) => {
   const em = diDep<EntityManager>(TS_FP_DI_MIKROORM_EM)
 
   return em.getReference(
-    entity.constructor.name,
+    entity.constructor.name as unknown as EntityName,
     em
       .getMetadata()
-      .get(entity.constructor.name)
+      .getByClassName(entity.constructor.name)
       .primaryKeys.map(pk => entity[pk])
   )
 }
