@@ -10,10 +10,6 @@ type Entity = EntitySchema & {
   [key: string]: unknown
 }
 
-type Some = { _tag: 'Some'; value: unknown }
-type Right = { _tag: 'Right'; right: unknown }
-type Left = { _tag: 'Left'; left: unknown }
-
 const TS_FP_DI_MIKROORM_EM = 'ts-fp-di-mikroorm-em'
 const TS_FP_DI_MIKROORM_ENTITIES = 'ts-fp-di-mikroorm-entities'
 const TS_FP_DI_MIKROORM_ON_PERSIST_CB = 'ts-fp-di-mikroorm-on-persist-cb'
@@ -57,20 +53,11 @@ export const entityConstructor = <T extends object>(self: T, ent: T) =>
   Object.entries(ent).forEach(([key, val]) => Reflect.set(self, key, val))
 
 const entitiesSet = (maybeEntity: unknown, entities = new Set<Entity>()): Set<Entity> => {
-  if (isLeft(maybeEntity) && maybeEntity.left instanceof Error) {
-    throw maybeEntity.left
-  }
   if (Array.isArray(maybeEntity)) {
     return arrayToSet(maybeEntity, entities)
   }
   if (types.isMap(maybeEntity) || types.isSet(maybeEntity)) {
     return arrayToSet(Array.from(maybeEntity.values()), entities)
-  }
-  if (isSome(maybeEntity)) {
-    return entitiesSet(maybeEntity.value, entities)
-  }
-  if (isRight(maybeEntity)) {
-    return entitiesSet(maybeEntity.right, entities)
   }
   if (!isEntity(maybeEntity)) {
     return entities
@@ -111,15 +98,6 @@ const persistEntity = async (entity: Entity) => {
 
   return em.persist(updated ?? entity)
 }
-
-const isSome = (maybeEntity: unknown): maybeEntity is Some =>
-  maybeEntity != null && (maybeEntity as Some)._tag === 'Some' && (maybeEntity as Some).value != null
-
-const isRight = (maybeEntity: unknown): maybeEntity is Right =>
-  maybeEntity != null && (maybeEntity as Right)._tag === 'Right' && (maybeEntity as Right).right != null
-
-const isLeft = (maybeEntity: unknown): maybeEntity is Left =>
-  maybeEntity != null && (maybeEntity as Left)._tag === 'Left' && (maybeEntity as Left).left != null
 
 const isEntity = (maybeEntity: unknown): maybeEntity is Entity =>
   diDep<Set<unknown>>(TS_FP_DI_MIKROORM_ENTITIES).has(

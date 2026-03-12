@@ -32,7 +32,6 @@
     "@mikro-orm/reflection": "^7.0.1",
     "@mikro-orm/sqlite": "^7.0.1",
     "@types/node": "^25.5.0",
-    "fp-ts": "^2.16.11",
     "reflect-metadata": "^0.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
