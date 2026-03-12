@@ -34,7 +34,8 @@ Only need to use `em` helper for MikroORM, which can help to consider context of
 ## Example
 
 ```ts
-import { Entity, PrimaryKey, Property, wrap } from '@mikro-orm/core'
+import { wrap } from '@mikro-orm/core'
+import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy'
 import { em, entityConstructor, onPersist, wrapTsFpDiMikroorm } from 'ts-fp-di-mikroorm'
 import { dis, dic } from 'ts-fp-di'
 
